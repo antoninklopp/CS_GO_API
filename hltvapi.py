@@ -7,27 +7,6 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 import pandas as pd
 
-'''
-
-This program has been written by akagna
-GitHub @akagna
--
--
--
--
--
-'''
-
-matchlinks = []
-matchdates = []
-matchclocks = []
-matcheventnames = []
-teamlogos = []
-matchbestof = []
-matchstatus = []
-teamnames1 = []
-teamnames2 = []
-match = {'matches': []}
 
 if os.path.isfile(os.getcwd() + '/match.json'):
     os.remove(os.getcwd() + '/match.json')
@@ -41,13 +20,26 @@ def get_source(link):
 
 """
 Get all the upcoming matches
-@param number_days : get the upcoming matches for the number of following days
+@param number_days : get the upcoming matches for the number of following days. 
+
+@return: a panda dataframe with all the matches information. 
 """
 def upcomingmatches(number_days=0):
     matchlinks_um = []
     today = datetime.today()
 
     for i in range(number_days + 1):
+
+        matchlinks = []
+        matchdates = []
+        matchclocks = []
+        matcheventnames = []
+        teamlogos = []
+        matchbestof = []
+        matchstatus = []
+        teamnames1 = []
+        teamnames2 = []
+        match = {'matches': []}
         
         soup = get_source('https://hltv.org/matches')
         
@@ -128,8 +120,21 @@ def livematches():
             time.sleep(0.01)
     return len(matchlinks_lm)
 
-
+"""
+Get all the results from HLTV
+"""
 def results():
+
+    matchlinks = []
+    matchdates = []
+    matchclocks = []
+    matcheventnames = []
+    teamlogos = []
+    matchbestof = []
+    matchstatus = []
+    teamnames1 = []
+    teamnames2 = []
+
     matchlinks_rs = []
     soup = get_source('https://hltv.org/results')
     now = datetime.now()
