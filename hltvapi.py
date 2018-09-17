@@ -28,7 +28,7 @@ def upcomingmatches(number_days=0):
     matchlinks_um = []
     today = datetime.today()
 
-    for i in range(number_days + 1):
+    for _ in range(number_days + 1):
 
         matchlinks = []
         matchdates = []
@@ -165,9 +165,8 @@ def results(number_days=1):
                 tdy = headline[3][:-2]
                 yr = headline[4]
                 checkmdl = [mnth, tdy, yr]
-                if check == checkmdl:
+                if (check[0] == checkmdl[0]) and (int(check[1]) == int(checkmdl[1])) and (int(check[1]) == int(checkmdl[1])):
                     resultdates.append(tddate.text)
-                    print(tddate.text)
                     number_results += 1
                     break
                 else:
@@ -179,7 +178,7 @@ def results(number_days=1):
         print(number_results, number_days)
 
         print("number results", number_results)
-
+        
         for nm in range(len(resultdates)):
             for links in soup.find(class_='standard-headline', text=(resultdates[nm])).find_parent().find_all(
                     class_='a-reset'):
@@ -206,6 +205,7 @@ def results(number_days=1):
                 matchbestof.append(maps[:12])
             matchstatus.append('FINISHED')
             time.sleep(0.01)
+            
 
         page_number += 1
 
