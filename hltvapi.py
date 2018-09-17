@@ -123,7 +123,7 @@ def livematches():
 """
 Get all the results from HLTV
 """
-def results():
+def results(number_days=1):
 
     matchlinks = []
     matchdates = []
@@ -138,65 +138,72 @@ def results():
     matchlinks_rs = []
     soup = get_source('https://hltv.org/results')
     now = datetime.now()
-    month = datetime.strftime(now, '%B')
-    today = datetime.strftime(now, '%d')
     yesterday = datetime.strftime(now + timedelta(-1), '%d')
-    year = datetime.strftime(now, '%Y')
-    check = [month, today, year]
     resultdates = []
 
-    for tddate in soup.find_all(class_='standard-headline'):
-        headline = str(tddate.text).split()
-        if len(headline) != 5:
-            continue
-        mnth = headline[2]
-        tdy = headline[3][:-2]
-        yr = headline[4]
-        checkmdl = [mnth, tdy, yr]
-        if check == checkmdl:
-            resultdates.append(tddate.text)
-            break
-        else:
-            continue
-    for yddate in soup.find_all(class_='standard-headline'):
-        check = [month, yesterday, year]
-        headline = str(yddate.text).split()
-        if len(headline) != 5:
-            continue
-        mnth = headline[2]
-        ydy = headline[3][:-2]
-        yr = headline[4]
-        checkmdl = [mnth, ydy, yr]
-        if check == checkmdl:
-            resultdates.append(yddate.text)
-            break
-        else:
-            continue
+    print(number_days)
+    number_results = 0
+
+    for _ in range(number_days):
+        month = datetime.strftime(now, '%B')
+        today = datetime.strftime(now, '%d')
+        year = datetime.strftime(now, '%Y')
+        check = [month, today, year]
+        for tddate in soup.find_all(class_='standard-headline'):
+            headline = str(tddate.text).split()
+            if len(headline) != 5:
+                continue
+            mnth = headline[2]
+            tdy = headline[3][:-2]
+            yr = headline[4]
+            checkmdl = [mnth, tdy, yr]
+            if check == checkmdl:
+                resultdates.append(tddate.text)
+                number_results += 1
+                break
+            else:
+                continue
+
+        now -= timedelta(days=1)
+
+    print("number results", number_results)
+
     for nm in range(len(resultdates)):
         for links in soup.find(class_='standard-headline', text=(resultdates[nm])).find_parent().find_all(
                 class_='a-reset'):
             matchlinks_rs.append('https://hltv.org' + links.get('href'))
             matchlinks.append('https://hltv.org' + links.get('href'))
     for x in tqdm(range(len(matchlinks_rs))):
-        soup = get_source(matchlinks_rs[x])
-        time_class = soup.find('div', class_='time')['data-unix']
+        soup_match = get_source(matchlinks_rs[x])
+        time_class = soup_match.find('div', class_='time')['data-unix']
         realtimeclock = datetime.fromtimestamp(int(time_class[:10])).time()
         matchclocks.append(realtimeclock)
-        for tn in soup.find_all('div', class_='teamName'):
-            teamnames.append(tn.text)
-        matchdate = soup.find('div', class_='date').text
+        tn = soup_match.find_all('div', class_='teamName')
+        teamnames1.append(tn[0].text)
+        teamnames2.append(tn[1].text)
+        matchdate = soup_match.find('div', class_='date').text
         matchdates.append(matchdate)
-        eventname = soup.find('div', class_='event text-ellipsis').text
+        eventname = soup_match.find('div', class_='event text-ellipsis').text
         matcheventnames.append(eventname)
-        for lg in soup.find_all('img', class_='logo'):
+        for lg in soup_match.find_all('img', class_='logo'):
             teamlogos.append(lg.get('src'))
-        maps = soup.find('div', class_='standard-box veto-box').find(class_='padding preformatted-text').text
+        maps = soup_match.find('div', class_='standard-box veto-box').find(class_='padding preformatted-text').text
         if maps.startswith('Best'):
             matchbestof.append(maps[:9])
         else:
             matchbestof.append(maps[:12])
         matchstatus.append('FINISHED')
         time.sleep(0.01)
+
+    all_data = []
+
+    for ml, mc, tm1, tm2, md, me, mb in zip(matchlinks, matchclocks, teamnames1, teamnames2, matchdates, matcheventnames, matchbestof):
+        all_data.append([ml, mc, tm1, tm2, md, me, mb])
+
+    dataframe = pd.DataFrame(all_data, \
+            columns=["match_links", "match_clocks", "teamnames1", "teamnames2", "matchdates", "matcheventnames", "matchbestof"])
+
+    return dataframe
 
 def get_all_results():
     print('Upcoming matches are getting pulled.')
