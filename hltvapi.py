@@ -120,11 +120,12 @@ def livematches():
             time.sleep(0.01)
     return len(matchlinks_lm)
 
-"""
-Get all the results from HLTV
-"""
-def results(number_days=1):
+def results(number_days=1): 
+    """
+    Get all the results from HLTV
 
+    @param number_days : get the results from the n last days. 
+    """
     matchlinks = []
     matchdates = []
     matchclocks = []
@@ -138,62 +139,75 @@ def results(number_days=1):
     matchlinks_rs = []
     soup = get_source('https://hltv.org/results')
     now = datetime.now()
-    yesterday = datetime.strftime(now + timedelta(-1), '%d')
-    resultdates = []
 
     print(number_days)
     number_results = 0
+    page_number = 0
 
-    for _ in range(number_days):
-        month = datetime.strftime(now, '%B')
-        today = datetime.strftime(now, '%d')
-        year = datetime.strftime(now, '%Y')
-        check = [month, today, year]
-        for tddate in soup.find_all(class_='standard-headline'):
-            headline = str(tddate.text).split()
-            if len(headline) != 5:
-                continue
-            mnth = headline[2]
-            tdy = headline[3][:-2]
-            yr = headline[4]
-            checkmdl = [mnth, tdy, yr]
-            if check == checkmdl:
-                resultdates.append(tddate.text)
-                number_results += 1
-                break
+    while number_days > number_results:
+        
+        resultdates = []
+
+        if page_number != 0:
+            soup = get_source('https://hltv.org/results' + "?offset=" + str(page_number) + "00")
+
+        now = datetime.now() - timedelta(days=number_results-1)
+        for _ in range(number_results, number_days + 2, 1):
+            month = datetime.strftime(now, '%B')
+            today = datetime.strftime(now, '%d')
+            year = datetime.strftime(now, '%Y')
+            check = [month, today, year]
+            for tddate in soup.find_all(class_='standard-headline'):
+                headline = str(tddate.text).split()
+                if len(headline) != 5:
+                    continue
+                mnth = headline[2]
+                tdy = headline[3][:-2]
+                yr = headline[4]
+                checkmdl = [mnth, tdy, yr]
+                if check == checkmdl:
+                    resultdates.append(tddate.text)
+                    print(tddate.text)
+                    number_results += 1
+                    break
+                else:
+                    # print(tddate.text)
+                    continue
+
+            now -= timedelta(days=1)
+
+        print(number_results, number_days)
+
+        print("number results", number_results)
+
+        for nm in range(len(resultdates)):
+            for links in soup.find(class_='standard-headline', text=(resultdates[nm])).find_parent().find_all(
+                    class_='a-reset'):
+                matchlinks_rs.append('https://hltv.org' + links.get('href'))
+                matchlinks.append('https://hltv.org' + links.get('href'))
+        for x in tqdm(range(page_number * 100, len(matchlinks_rs))):
+            soup_match = get_source(matchlinks_rs[x])
+            time_class = soup_match.find('div', class_='time')['data-unix']
+            realtimeclock = datetime.fromtimestamp(int(time_class[:10])).time()
+            matchclocks.append(realtimeclock)
+            tn = soup_match.find_all('div', class_='teamName')
+            teamnames1.append(tn[0].text)
+            teamnames2.append(tn[1].text)
+            matchdate = soup_match.find('div', class_='date').text
+            matchdates.append(matchdate)
+            eventname = soup_match.find('div', class_='event text-ellipsis').text
+            matcheventnames.append(eventname)
+            for lg in soup_match.find_all('img', class_='logo'):
+                teamlogos.append(lg.get('src'))
+            maps = soup_match.find('div', class_='standard-box veto-box').find(class_='padding preformatted-text').text
+            if maps.startswith('Best'):
+                matchbestof.append(maps[:9])
             else:
-                continue
+                matchbestof.append(maps[:12])
+            matchstatus.append('FINISHED')
+            time.sleep(0.01)
 
-        now -= timedelta(days=1)
-
-    print("number results", number_results)
-
-    for nm in range(len(resultdates)):
-        for links in soup.find(class_='standard-headline', text=(resultdates[nm])).find_parent().find_all(
-                class_='a-reset'):
-            matchlinks_rs.append('https://hltv.org' + links.get('href'))
-            matchlinks.append('https://hltv.org' + links.get('href'))
-    for x in tqdm(range(len(matchlinks_rs))):
-        soup_match = get_source(matchlinks_rs[x])
-        time_class = soup_match.find('div', class_='time')['data-unix']
-        realtimeclock = datetime.fromtimestamp(int(time_class[:10])).time()
-        matchclocks.append(realtimeclock)
-        tn = soup_match.find_all('div', class_='teamName')
-        teamnames1.append(tn[0].text)
-        teamnames2.append(tn[1].text)
-        matchdate = soup_match.find('div', class_='date').text
-        matchdates.append(matchdate)
-        eventname = soup_match.find('div', class_='event text-ellipsis').text
-        matcheventnames.append(eventname)
-        for lg in soup_match.find_all('img', class_='logo'):
-            teamlogos.append(lg.get('src'))
-        maps = soup_match.find('div', class_='standard-box veto-box').find(class_='padding preformatted-text').text
-        if maps.startswith('Best'):
-            matchbestof.append(maps[:9])
-        else:
-            matchbestof.append(maps[:12])
-        matchstatus.append('FINISHED')
-        time.sleep(0.01)
+        page_number += 1
 
     all_data = []
 
@@ -204,45 +218,3 @@ def results(number_days=1):
             columns=["match_links", "match_clocks", "teamnames1", "teamnames2", "matchdates", "matcheventnames", "matchbestof"])
 
     return dataframe
-
-def get_all_results():
-    print('Upcoming matches are getting pulled.')
-    upcomingmatches()
-    time.sleep(1)
-    print('Live matches are getting pulled.')
-    livematches()
-    time.sleep(1)
-    print('Results are getting pulled.')
-    results()
-    time.sleep(1)
-    print('Matches are being written.')
-    time.sleep(1)
-
-
-    teamA = teamnames[0::2]
-    teamB = teamnames[1::2]
-    for n in range(len(matchlinks)):
-        print(teamA[n], 'vs', teamB[n], 'on', matchdates[n], 'at', matcheventnames[n], matchclocks[n], matchstatus[n])
-
-    teamAlogo = teamlogos[0::2]
-    teamBlogo = teamlogos[1::2]
-
-
-    for dn in range(len(matchlinks)):
-
-        match['matches'].append({
-            'team1': str(teamA[dn]),
-            'team2': str(teamB[dn]),
-            'eventname': str(matcheventnames[dn]),
-            'date': str(matchdates[dn]),
-            'clock': str(matchclocks[dn]),
-            'bo': str(matchbestof[dn]),
-            'status': str(matchstatus[dn]),
-            'team1logo': str(teamAlogo[dn]),
-            'team2logo': str(teamBlogo[dn])
-        })
-
-
-    dump = json.dumps(match, indent=2)
-    with open(os.getcwd() + '/match.json', 'a') as f:
-        f.write(dump)

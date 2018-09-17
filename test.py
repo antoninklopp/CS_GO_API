@@ -12,9 +12,11 @@ def test_results():
         print(t1, "vs", t2)
 
 def results_filtered():
-    results = hltv.results(50)
+    results = hltv.results(8)
+    i = 0
     for t1, t2 in zip(results["teamnames1"], results["teamnames2"]):
-        print(t1, "vs", t2)
+        i += 1
+        print(i, t1, "vs", t2)
     results = results[(results.teamnames1 == "G2")]
     print(results)
     for t1, t2 in zip(results["teamnames1"], results["teamnames2"]):
